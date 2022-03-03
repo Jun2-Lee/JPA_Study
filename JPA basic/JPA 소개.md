@@ -1,0 +1,87 @@
+# SQL 중심 개발의 문제점
+
+__지금 시대는 객체를 관계형 DB에 관리한다!__
+
+### 무한 반복, 지루한 코드!
+> Table이 생길 때마다 CRUD 코드를 모두 다 설정해줘야 한다 -> SQL에 의존적인 개발을 피하기 어려워진다..(변경도 쉽지 않다)
+
+### 패러다임의 불일치!
+> 객체 vs 관계형 데이터베이스 -> 둘의 패러다임에 충돌이 생긴다
+> 
+> 현실적인 대안은 관계형 데이터베이스고, 이것을 실현시키기 위해서는 개발자들이 SQL을 일일히 짜줘야 한다
+
+#### 객체와 관계형 DB의 차이
+- 상속
+- 연관관계
+- 데이터 타입
+- 데이터 식별 방법
+
+__계층형 아키텍처를 사용하면 진정한 의미의 계층 분할이 어렵다.__
+
+__객체를 자바 컬렉션에 저장하듯이 DB에 저장할 순 없을까?로부터 나온 것이 바로 JPA이다!__
+
+# JPA 소개
+> __JPA는 Java PErsistence API의 줄임말로, 자바진영의 ORM 기술 표준이다__
+
+## ORM
+- Object-relational mapping(객체 관계 매핑)
+- 객체는 객체대로 설계하고, 관계형 DB는 관계형 DB대로 설계한 뒤, ORM 프레임워크가 중간에서 매핑해주는 것
+- 대중적인 언어에는 대부분 ORM 기술이 존재
+
+JPA는 애플리케이션과 JDBC 사이에서 동작한다
+<img width="810" alt="스크린샷 2022-03-03 오후 10 32 07" src="https://user-images.githubusercontent.com/80378041/156574857-851dd56e-2e17-4e68-a613-3432ad430261.png">
+
+### JPA 동작 - 저장
+<img width="654" alt="스크린샷 2022-03-03 오후 10 32 21" src="https://user-images.githubusercontent.com/80378041/156574869-027a7e32-e7bb-40b1-aa82-46cd6ef5e50b.png">
+
+JPA에 객체를 넘기면, JPA가 객체를 분석하고, insert 쿼리를 알아서 작성한 뒤, DB에 보낸 뒤 결과를 받아준다.
+
+### JPA 동작 - 조회
+<img width="671" alt="스크린샷 2022-03-03 오후 10 32 30" src="https://user-images.githubusercontent.com/80378041/156575109-11a536e8-7228-4407-b831-f859ce5901cc.png">
+
+JPA에 PK 아이디를 넘기면, JPA에서 select 쿼리를 작성해서, 원하는 객체의 결과값을 반환해준다.
+
+## JPA를 왜 사용해야 할까?
+> SQL 중심적인 개발대신 객체 중심으로 개발할 수 있다.
+
+### 생산성
+- 저장 조회 수정 삭제(CRUD) 모두 간단한 한 줄로 쓸 수 있다.
+  - 저장: jpa.persist(member)
+  - 조회: Member member = jpa.find(memberId) 
+  - 수정: member.setName(“변경할 이름”)
+  - 삭제: jpa.remove(member)
+
+### 유지보수
+ 기존에는 필드 변경이 있을 때 모든 SQL을 수정해야 했다. 하지만 JPA에서는 필드만 추가해주면 된다. SQL은 JPA가 처리해준다!
+
+### JPA와 패러다임의 불일치 해결
+ 위에서 보았던 패러다임의 불일치를 해결해주었다. 위의 상속, 연관관계 등을 JPA가 전부 처리해주었다!
+ 
+### JPA의 성능 최적화 기능
+
+#### 1차 캐시와 동일성 보장
+- 같은 트랜잭션 안에서는 같은 엔티티를 반환 - 약간의 조회 성능 향상
+- DB Isolation Level이 Read Commit이어도 애플리케이션에서 Repeatable Read 보장
+<img width="760" alt="스크린샷 2022-03-03 오후 10 53 05" src="https://user-images.githubusercontent.com/80378041/156578389-ea9e8e4e-cdbd-47c6-b35e-a1e8430e6890.png">
+
+
+#### 트랜잭션을 지원하는 쓰기 지연
+- INSERT
+  - 트랜잭션을 커밋할 때까지 INSERT SQL을 모음
+  - JDBC BATCH SQL 기능을 사용해서 한번에 SQL 적용
+<img width="623" alt="스크린샷 2022-03-03 오후 10 53 12" src="https://user-images.githubusercontent.com/80378041/156578409-838b7c31-4e84-44a2-ae0a-3448546d0407.png">
+
+- UPDATE
+  - UPDATE, DELET로 인한 로우락 시간 최소화
+  - 트랜잭션 커밋 시 UPDATE, DELETE SQL 실행하고, 바로 커밋
+<img width="879" alt="스크린샷 2022-03-03 오후 10 53 20" src="https://user-images.githubusercontent.com/80378041/156578417-6058afa7-6443-4895-8d0e-72bf62517743.png">
+
+#### 지연 로딩과 즉시 로딩
+- JPA는 지연 로딩과 즉시 로딩 두가지를 옵션 하나로 왔다갔다 할 수 있다!
+  - 지연 로딩 : 객체가 실제 사용될 때 로딩
+  - 즉시 로딩 : JOIN SQL로 한번에 연관된 객체까지 미리 조회
+<img width="894" alt="스크린샷 2022-03-03 오후 10 54 07" src="https://user-images.githubusercontent.com/80378041/156578447-1fb67ef6-4fe0-4787-b0bf-a5acdd904a49.png">
+
+
+
+
